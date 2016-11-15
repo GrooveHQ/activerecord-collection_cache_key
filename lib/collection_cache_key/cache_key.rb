@@ -23,11 +23,23 @@ module CollectionCacheKey
 
     def details_for(collection, timestamp_column)
       column = "#{connection.quote_table_name(collection.table_name)}.#{connection.quote_column_name(timestamp_column)}"
-      query = collection.dup
-      result = query.select("COUNT(*) AS size, MAX(#{column}) AS timestamp").to_a.first
-      attrs = result.attributes
+      query = collection
+        .unscope(:select)
+        .select("COUNT(*) AS #{connection.quote_column_name('size')}", "MAX(#{column}) AS timestamp")
+        .unscope(:order)
+        .unscope(:limit)
+        .unscope(:offset)
+      result = connection.select_one(query)
 
-      [query_key(collection), attrs['size'], parsed_timestamp(attrs['timestamp'])]
+      if result.blank?
+        size = 0
+        timestamp = nil
+      else
+        size = result['size']
+        timestamp = parsed_timestamp(attrs['timestamp'])
+      end
+
+      [query_key(collection), size, timestamp]
     end
 
     def query_key(collection)
