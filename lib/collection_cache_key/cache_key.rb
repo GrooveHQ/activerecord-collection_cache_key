@@ -36,7 +36,7 @@ module CollectionCacheKey
         timestamp = nil
       else
         size = result['size']
-        timestamp = parsed_timestamp(attrs['timestamp'])
+        timestamp = parsed_timestamp(result['timestamp'])
       end
 
       [query_key(collection), size, timestamp]
