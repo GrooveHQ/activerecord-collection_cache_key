@@ -22,9 +22,15 @@ module CollectionCacheKey
     end
 
     def details_for(collection, timestamp_column)
-      column = "#{connection.quote_table_name(collection.table_name)}.#{connection.quote_column_name(timestamp_column)}"
       query = collection.dup
-      result = query.select("COUNT(*) AS size, MAX(#{column}) AS timestamp").to_a.first
+
+      result = query
+        .table
+        .engine
+        .from("(#{query.to_sql}) subquery_for_cache_key")
+        .select("COUNT(*) AS size, MAX(subquery_for_cache_key.#{timestamp_column}) AS timestamp")
+        .to_a
+        .first
       attrs = result.attributes
 
       [query_key(collection), attrs['size'], parsed_timestamp(attrs['timestamp'])]
